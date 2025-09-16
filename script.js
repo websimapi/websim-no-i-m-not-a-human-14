@@ -243,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }, { once: true });
     }
 
-    function playSound(buffer, volume = 1.0, onEndedCallback = null, loop = false, fadeInDuration = 0) {
+    function playSound(buffer, volume = 1.0, loop = false) {
         if (!audioUnlocked || !buffer) return null;
         
         try {
@@ -252,20 +252,11 @@ document.addEventListener('DOMContentLoaded', () => {
             source.loop = loop;
 
             const gainNode = audioCtx.createGain();
-            if (fadeInDuration > 0) {
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(volume, audioCtx.currentTime + fadeInDuration);
-            } else {
-                gainNode.gain.value = volume;
-            }
+            gainNode.gain.value = volume;
 
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             source.start(0);
-
-            if (onEndedCallback && !loop) {
-                source.addEventListener('ended', onEndedCallback, { once: true });
-            }
 
             return { source, gainNode };
         } catch (e) {
@@ -277,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function playKnock() {
         if (knockBuffers.length === 0) return;
         const randomIndex = Math.floor(Math.random() * knockBuffers.length);
-        playSound(knockBuffers[randomIndex]);
+        playSound(knockBuffers[randomIndex], 1.0);
     }
 
     function scheduleNextKnock() {
@@ -291,23 +282,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function initButtonHovers() {
         const buttons = document.querySelectorAll('.menu button, .overlay-btn, .credits-btn');
         let staticLoopSound = null;
-        let initialSoundSource = null;
+        let hoverSoundTimeout = null;
 
-        const stopAllSounds = () => {
-            if (initialSoundSource) {
-                try { initialSoundSource.stop(); } catch (e) { /* ignore */ }
-                initialSoundSource = null;
-            }
+        const stopStaticLoop = () => {
             if (staticLoopSound) {
-                const { source, gainNode } = staticLoopSound;
-                // Fade out
-                const fadeOutDuration = 0.2;
-                gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-                gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + fadeOutDuration);
-                setTimeout(() => {
-                    try { source.stop(); } catch (e) { /* ignore */ }
-                }, fadeOutDuration * 1000);
+                try {
+                    staticLoopSound.source.stop();
+                } catch (e) { /* ignore if already stopped */ }
                 staticLoopSound = null;
+            }
+             if (hoverSoundTimeout) {
+                clearTimeout(hoverSoundTimeout);
+                hoverSoundTimeout = null;
             }
         };
 
@@ -315,18 +301,18 @@ document.addEventListener('DOMContentLoaded', () => {
             button.addEventListener('mouseenter', () => {
                 if (button.disabled) return;
                 
-                stopAllSounds();
-
+                stopStaticLoop();
                 button.classList.add('static-bg-active');
                 
-                const hoverSound = playSound(uiHoverBuffer, 0.2);
-                if(hoverSound) initialSoundSource = hoverSound.source;
+                playSound(uiHoverBuffer, 0.2);
 
-                staticLoopSound = playSound(tvStaticLoopBuffer, 0.1, null, true, 0.5); // 0.5s fade-in
+                hoverSoundTimeout = setTimeout(() => {
+                    staticLoopSound = playSound(tvStaticLoopBuffer, 0.1, true);
+                }, 150); // Delay to allow hover sound to play first
             });
 
             button.addEventListener('mouseleave', () => {
-                stopAllSounds();
+                stopStaticLoop();
                 button.classList.remove('static-bg-active');
             });
         });
