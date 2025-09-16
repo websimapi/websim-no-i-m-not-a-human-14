@@ -121,7 +121,27 @@ h1 .bounce-comma { display:inline-block; animation: commaBounce 2.6s ease-in-out
     align-items: center;
     gap: 2vmin;
     padding: 1vmin 0;
-    overflow: hidden;
+    overflow: visible; /* Changed from hidden */
+    z-index: 10;
+    position: relative;
+}
+
+.carousel-container {
+    position: absolute;
+    top: 0;
+    left: 2vmin; /* Matches #app padding */
+    right: 2vmin; /* Matches #app padding */
+    bottom: 0;
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr;
+    gap: 2vmin;
+    pointer-events: none; /* Pass clicks through */
+    z-index: 1; /* Behind content and credits button */
+}
+
+.panel-placeholder {
+    /* Empty element to maintain grid layout */
+    height: 100%;
 }
 
 .side-panel {
@@ -130,7 +150,7 @@ h1 .bounce-comma { display:inline-block; animation: commaBounce 2.6s ease-in-out
     gap: 1.5vmin;
     height: 100%;
     justify-content: flex-start;
-    overflow: hidden; /* hide overflow to show only 5 at a time */
+    overflow: visible; /* Changed from hidden */
     padding-block: 1vmin;
 }
 
